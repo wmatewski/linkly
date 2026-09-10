@@ -129,7 +129,7 @@ app.get('/links/:id', async (c) => {
   const user = await userFrom(c.req.raw); const data = await asUser(user.id, async (tx) => {
     const links = await tx`select l.*, count(c.id) as clicks, max(c.occurred_at) as last_click_at from links.links l left join analytics.clicks c on c.link_id = l.id where l.id = ${c.req.param('id')} and l.deleted_at is null group by l.id`; if (!links.length) return null
     const id = links[0].id
-    const clicks = await tx`select occurred_at, host(ip) as ip, browser_name, browser_version, os_name, os_version, device_type, country_name, city, referrer from analytics.clicks where link_id = ${id} order by occurred_at desc limit 200`
+    const clicks = await tx`select id, occurred_at, host(ip) as ip, user_agent, referrer, browser_name, browser_version, os_name, os_version, device_type, device_vendor, device_model, country_code, country_name, region, city, timezone, language, method, is_bot, bot_name from analytics.clicks where link_id = ${id} order by occurred_at desc limit 200`
     const summary = await tx`select count(*)::int as clicks, count(distinct ip)::int as unique_visitors, coalesce(round(100.0 * count(*) filter (where device_type = 'mobile') / nullif(count(*),0),1),0) as mobile_percent, coalesce(mode() within group (order by country_code), '-') as country_code from analytics.clicks where link_id = ${id}`
     const timeline = await tx`select to_char(date_trunc('hour', occurred_at), 'HH24:00') as label, count(*)::int as clicks from analytics.clicks where link_id = ${id} and occurred_at >= now() - interval '24 hours' group by 1 order by 1`
     const devices = await tx`select coalesce(device_type, 'other') as label, count(*)::int as clicks from analytics.clicks where link_id = ${id} group by 1 order by 2 desc`
@@ -139,6 +139,7 @@ app.get('/links/:id', async (c) => {
 })
 
 app.get('/public/:slug', async (c) => {
+  c.header('Accept-CH', 'Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version, Sec-CH-UA-Model, Sec-CH-UA-Mobile')
   const a = await requestAnalytics(c.req.raw)
   const rows = await sql`select * from analytics.record_public_click(${c.req.param('slug')}, ${a.ip}, ${a.userAgent}, ${a.referrer}, ${a.browserName}, ${a.browserVersion}, ${a.osName}, ${a.osVersion}, ${a.deviceType}, ${a.deviceVendor}, ${a.deviceModel}, ${a.language}, ${a.acceptLanguage}, ${a.method}, ${a.isBot}, ${a.botName}, ${a.countryCode}, ${a.countryName}, ${a.region}, ${a.city}, ${a.timezone})`
   if (!rows.length) throw problem('Nie znaleziono aktywnego linku.', 404)
