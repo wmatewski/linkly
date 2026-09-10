@@ -1,4 +1,4 @@
 import { ClientOnly, createFileRoute } from '@tanstack/react-router'
-import { LegacyApp } from '../main.jsx'
+import { LinklyApp } from '../app.jsx'
 
-export const Route = createFileRoute('/$')({ component: () => <ClientOnly fallback={null}><LegacyApp /></ClientOnly> })
+export const Route = createFileRoute('/$')({ component: () => <ClientOnly fallback={null}><LinklyApp /></ClientOnly> })
