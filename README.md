@@ -20,3 +20,11 @@ pnpm dev
 - `/privacy`, `/terms` dokumenty
 
 Projekt jest wyłącznie frontendem i korzysta z danych demonstracyjnych. Formularze oraz operacje na linkach symulują działanie UI lokalnie.
+
+## Repozytorium
+
+https://github.com/wmatewski/linkly
+
+## Licencja
+
+MIT — zobacz `LICENSE.md`.
