@@ -149,7 +149,6 @@ create table if not exists analytics.clicks (
 
   -- request / network
   ip inet,
-  ip_hash text,                       -- useful if raw IP is later removed
   user_agent text,
   referrer text,
 
@@ -209,3 +208,17 @@ create table if not exists auth.user_settings (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Owner isolation. The backend sets app.user_id only after verifying the Auth.js cookie.
+create or replace function auth.current_user_id() returns uuid language sql stable as $$
+  select nullif(current_setting('app.user_id', true), '')::uuid
+$$;
+alter table links.links enable row level security;
+alter table links.links force row level security;
+alter table analytics.clicks enable row level security;
+alter table analytics.clicks force row level security;
+alter table analytics.link_daily_stats enable row level security;
+alter table analytics.link_daily_stats force row level security;
+create policy links_owner_only on links.links for all using (user_id = auth.current_user_id()) with check (user_id = auth.current_user_id());
+create policy clicks_owner_only on analytics.clicks for select using (exists (select 1 from links.links l where l.id = link_id and l.user_id = auth.current_user_id()));
+create policy daily_stats_owner_only on analytics.link_daily_stats for select using (exists (select 1 from links.links l where l.id = link_id and l.user_id = auth.current_user_id()));
