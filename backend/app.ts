@@ -105,10 +105,10 @@ app.patch('/account/password', async (c) => {
 app.get('/dashboard', async (c) => {
   const user = await userFrom(c.req.raw)
   const data = await asUser(user.id, async (tx) => {
-    const summary = await tx`select count(c.id)::int as clicks, count(*) filter (where l.deleted_at is null and l.is_active)::int as active_links, count(c.id) filter (where c.occurred_at >= date_trunc('day', now()))::int as today_clicks from links.links l left join analytics.clicks c on c.link_id = l.id where l.deleted_at is null`
-    const activity = await tx`select to_char(days.day, 'YYYY-MM-DD') as day, coalesce(sum(s.clicks), 0)::int as clicks from generate_series(current_date - interval '6 days', current_date, interval '1 day') as days(day) left join analytics.link_daily_stats s on s.day = days.day::date and exists (select 1 from links.links l where l.id = s.link_id and l.user_id = auth.current_user_id() and l.deleted_at is null) group by days.day order by days.day`
-    const top = await tx`select l.*, count(c.id) as clicks, max(c.occurred_at) as last_click_at from links.links l left join analytics.clicks c on c.link_id = l.id where l.deleted_at is null group by l.id order by count(c.id) desc, l.created_at desc limit 3`
-    const recent = await tx`select l.*, count(c.id) as clicks, max(c.occurred_at) as last_click_at from links.links l left join analytics.clicks c on c.link_id = l.id where l.deleted_at is null group by l.id order by l.created_at desc limit 4`
+    const summary = await tx`select count(c.id)::int as clicks, count(*) filter (where l.deleted_at is null and l.is_active)::int as active_links, count(c.id) filter (where c.occurred_at >= date_trunc('day', now()))::int as today_clicks from links.links l left join analytics.clicks c on c.link_id = l.id where l.user_id = ${user.id} and l.deleted_at is null`
+    const activity = await tx`select to_char(days.day, 'YYYY-MM-DD') as day, coalesce(sum(s.clicks), 0)::int as clicks from generate_series(current_date - interval '6 days', current_date, interval '1 day') as days(day) left join analytics.link_daily_stats s on s.day = days.day::date and exists (select 1 from links.links l where l.id = s.link_id and l.user_id = ${user.id} and l.deleted_at is null) group by days.day order by days.day`
+    const top = await tx`select l.*, count(c.id) as clicks, max(c.occurred_at) as last_click_at from links.links l left join analytics.clicks c on c.link_id = l.id where l.user_id = ${user.id} and l.deleted_at is null group by l.id order by count(c.id) desc, l.created_at desc limit 3`
+    const recent = await tx`select l.*, count(c.id) as clicks, max(c.occurred_at) as last_click_at from links.links l left join analytics.clicks c on c.link_id = l.id where l.user_id = ${user.id} and l.deleted_at is null group by l.id order by l.created_at desc limit 4`
     return { summary: summary[0], activity, top, recent }
   })
   return c.json({ summary: { clicks: Number(data.summary.clicks), activeLinks: Number(data.summary.active_links), todayClicks: Number(data.summary.today_clicks) }, activity: data.activity.map((x: any) => ({ day: x.day, clicks: Number(x.clicks) })), topLinks: data.top.map((x: any) => linkDto(x, c.req.raw)), recentLinks: data.recent.map((x: any) => linkDto(x, c.req.raw)) })
@@ -116,7 +116,7 @@ app.get('/dashboard', async (c) => {
 
 app.get('/links', async (c) => {
   const user = await userFrom(c.req.raw); const q = c.req.query('q')?.trim() ?? ''
-  const links = await asUser(user.id, (tx) => tx`select l.*, count(c.id) as clicks, max(c.occurred_at) as last_click_at from links.links l left join analytics.clicks c on c.link_id = l.id where l.deleted_at is null and (${q} = '' or l.slug ilike ${'%' + q + '%'} or coalesce(l.name,'') ilike ${'%' + q + '%'} or l.destination_url ilike ${'%' + q + '%'}) group by l.id order by l.created_at desc`)
+  const links = await asUser(user.id, (tx) => tx`select l.*, count(c.id) as clicks, max(c.occurred_at) as last_click_at from links.links l left join analytics.clicks c on c.link_id = l.id where l.user_id = ${user.id} and l.deleted_at is null and (${q} = '' or l.slug ilike ${'%' + q + '%'} or coalesce(l.name,'') ilike ${'%' + q + '%'} or l.destination_url ilike ${'%' + q + '%'}) group by l.id order by l.created_at desc`)
   return c.json({ links: links.map((x: any) => linkDto(x, c.req.raw)) })
 })
 app.post('/links', async (c) => {
@@ -124,10 +124,10 @@ app.post('/links', async (c) => {
   const rows = await asUser(user.id, (tx) => tx`insert into links.links(user_id, slug, destination_url, name, description, redirect_mode) values (${user.id}, ${slug}, ${input.destinationUrl}, ${input.name ?? null}, ${input.description ?? null}, ${input.redirectMode ?? 'redirect_page'}) returning *`)
   return c.json({ link: linkDto(rows[0], c.req.raw) }, 201)
 })
-app.delete('/links/:id', async (c) => { const user = await userFrom(c.req.raw); const rows = await asUser(user.id, (tx) => tx`update links.links set deleted_at = now(), updated_at = now() where id = ${c.req.param('id')} returning id`); if (!rows.length) throw problem('Nie znaleziono linku.', 404); return c.body(null, 204) })
+app.delete('/links/:id', async (c) => { const user = await userFrom(c.req.raw); const rows = await asUser(user.id, (tx) => tx`update links.links set deleted_at = now(), updated_at = now() where id = ${c.req.param('id')} and user_id = ${user.id} returning id`); if (!rows.length) throw problem('Nie znaleziono linku.', 404); return c.body(null, 204) })
 app.get('/links/:id', async (c) => {
   const user = await userFrom(c.req.raw); const data = await asUser(user.id, async (tx) => {
-    const links = await tx`select l.*, count(c.id) as clicks, max(c.occurred_at) as last_click_at from links.links l left join analytics.clicks c on c.link_id = l.id where l.id = ${c.req.param('id')} and l.deleted_at is null group by l.id`; if (!links.length) return null
+    const links = await tx`select l.*, count(c.id) as clicks, max(c.occurred_at) as last_click_at from links.links l left join analytics.clicks c on c.link_id = l.id where l.id = ${c.req.param('id')} and l.user_id = ${user.id} and l.deleted_at is null group by l.id`; if (!links.length) return null
     const id = links[0].id
     const clicks = await tx`select id, occurred_at, host(ip) as ip, user_agent, referrer, browser_name, browser_version, os_name, os_version, device_type, device_vendor, device_model, country_code, country_name, region, city, timezone, language, method, is_bot, bot_name from analytics.clicks where link_id = ${id} order by occurred_at desc limit 200`
     const summary = await tx`select count(*)::int as clicks, count(distinct ip)::int as unique_visitors, coalesce(round(100.0 * count(*) filter (where device_type = 'mobile') / nullif(count(*),0),1),0) as mobile_percent, coalesce(mode() within group (order by country_code), '-') as country_code from analytics.clicks where link_id = ${id}`
