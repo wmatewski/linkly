@@ -139,8 +139,8 @@ app.get('/links/:id', async (c) => {
 })
 
 app.get('/public/:slug', async (c) => {
-  const a = requestAnalytics(c.req.raw)
-  const rows = await sql`select * from analytics.record_public_click(${c.req.param('slug')}, ${a.ip}, ${a.userAgent}, ${a.referrer}, ${a.browserName}, ${a.browserVersion}, ${a.osName}, ${a.osVersion}, ${a.deviceType}, ${a.deviceVendor}, ${a.deviceModel}, ${a.language}, ${a.acceptLanguage}, ${a.method}, ${a.isBot}, ${a.botName})`
+  const a = await requestAnalytics(c.req.raw)
+  const rows = await sql`select * from analytics.record_public_click(${c.req.param('slug')}, ${a.ip}, ${a.userAgent}, ${a.referrer}, ${a.browserName}, ${a.browserVersion}, ${a.osName}, ${a.osVersion}, ${a.deviceType}, ${a.deviceVendor}, ${a.deviceModel}, ${a.language}, ${a.acceptLanguage}, ${a.method}, ${a.isBot}, ${a.botName}, ${a.countryCode}, ${a.countryName}, ${a.region}, ${a.city}, ${a.timezone})`
   if (!rows.length) throw problem('Nie znaleziono aktywnego linku.', 404)
   return c.json({ destinationUrl: rows[0].destination_url, redirectMode: rows[0].redirect_mode, name: rows[0].name ?? null })
 })
