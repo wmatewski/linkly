@@ -17,3 +17,4 @@ minimumReleaseAgeExclude:
   - '@tanstack/start-server-core@1.169.33'
   - '@tanstack/start-storage-context@1.167.31'
   - vite@8.3.0
+  - resend@6.27.0
