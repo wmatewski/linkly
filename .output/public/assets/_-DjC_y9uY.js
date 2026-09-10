@@ -1,1 +1,0 @@
-import{n as e,r as t}from"./index-C3yV6f4l.js";import{t as n}from"./main-fPNbWA6G.js";var r=t(),i=()=>(0,r.jsx)(e,{fallback:null,children:(0,r.jsx)(n,{})});export{i as component};
