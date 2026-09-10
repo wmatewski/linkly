@@ -9,6 +9,7 @@
 .app aside{overflow:hidden;overscroll-behavior:contain}
 .app aside{height:100vh;height:100dvh;max-height:100dvh;min-height:100dvh;inset-block-start:0;inset-block-end:auto}
 .appMain{min-height:100vh;overflow:visible}
+@media(max-width:900px){.app aside{position:sticky;top:0;z-index:30;height:auto;min-height:0;max-height:none}}
 
 .createLinkCard{background:#11130f;border-radius:17px;padding:10px;margin-bottom:0}.createLinkCard .shortener{padding:0}.optionalFields{background:#fff;border-radius:12px;margin-top:10px;padding:17px}.optionalIntro{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;padding-bottom:14px;border-bottom:1px solid #edf0ea}.optionalIntro strong,.optionalIntro span{display:block}.optionalIntro strong{font-size:12px}.optionalIntro span{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5}.optionalIntro svg{color:#8b9386;flex:0 0 auto}.optionalGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.optionalGrid label>span{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:700;margin-bottom:7px}.optionalGrid em{font-style:normal;font-size:9px;color:#91988e;font-weight:500}.optionalGrid input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:11px 12px;outline:0;background:#fbfcfa}.optionalGrid input:focus{border-color:#a9c95e;box-shadow:0 0 0 3px rgba(183,231,71,.15)}
 .redirectLinks{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
